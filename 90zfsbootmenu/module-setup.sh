@@ -5,11 +5,12 @@ check() {
   [ "${1}" = "-d" ] && return 0
 
   # Verify the zfs tool chain
-  for tool in "/usr/bin/zpool" "/usr/bin/zfs" "/usr/bin/mount.zfs" ; do
-    test -x "$tool" || return 1
-  done
+  require_binaries zpool || return 1
+  require_binaries zfs || return 1
+  require_binaries mount.zfs || return 1
+
   # Verify grep exists
-  which grep >/dev/null 2>&1 || return 1
+  require_binaries grep || return 1
 
   return 255
 }
@@ -33,14 +34,14 @@ installkernel() {
 }
 
 install() {
-  inst_rules /usr/lib/udev/rules.d/90-zfs.rules
-  inst_rules /usr/lib/udev/rules.d/69-vdev.rules
-  inst_rules /usr/lib/udev/rules.d/60-zvol.rules
+  inst_rules /lib/udev/rules.d/90-zfs.rules
+  inst_rules /lib/udev/rules.d/69-vdev.rules
+  inst_rules /lib/udev/rules.d/60-zvol.rules
   dracut_install hostid
-  dracut_install /usr/bin/zfs
-  dracut_install /usr/bin/zpool
+  dracut_install zfs
+  dracut_install zpool
   # Workaround for zfsonlinux/zfs#4749 by ensuring libgcc_s.so(.1) is included
-  if [[ -n "$(ldd /usr/bin/zpool | grep -F 'libgcc_s.so')" ]]; then
+  if [[ -n "$(ldd /sbin/zpool | grep -F 'libgcc_s.so')" ]]; then
     # Dracut will have already tracked and included it
     :;
   elif command -v gcc-config 2>&1 1>/dev/null; then
@@ -54,9 +55,9 @@ install() {
     # Fallback: Guess the path and include all matches
     dracut_install /usr/lib/gcc/*/*/libgcc_s.so*
   fi
-  dracut_install /usr/bin/mount.zfs
-  dracut_install /usr/lib/udev/vdev_id
-  dracut_install /usr/lib/udev/zvol_id
+  dracut_install mount.zfs
+  dracut_install /lib/udev/vdev_id
+  dracut_install /lib/udev/zvol_id
   dracut_install tac
   dracut_install awk
   dracut_install basename
@@ -77,8 +78,8 @@ install() {
   dracut_install mount
   dracut_install df
   dracut_install ip
-  dracut_install /usr/bin/mkdir
-  dracut_install /usr/bin/tail
+  dracut_install mkdir
+  dracut_install tail
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh"
   inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh"
   inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot"
